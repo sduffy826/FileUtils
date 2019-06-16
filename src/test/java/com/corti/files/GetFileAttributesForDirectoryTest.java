@@ -9,7 +9,7 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
-import com.corti.files.GetDirectoriesFromPath;
+import com.corti.files.GetDirectoriesFromPath_Original;
 
 class GetFileAttributesForDirectoryTest {
  
@@ -17,11 +17,13 @@ class GetFileAttributesForDirectoryTest {
   void testPath2IncludeAndFiles() throws Exception {
     // This tests paths to be included in the search, for this one we show how you
     //   can include paths and ignore the 'case' of the directory name
-    GetDirectoriesFromPath me = new GetDirectoriesFromPath("/seanduff");
-    me.setDebugFlag(false);
+    GetDirectoriesFromPath me = new GetDirectoriesFromPath("/seanduff/workspace");
+    me.setDebugFlag(true);
+    me.setMaxDepth(3);
     me.setPathMatcherIgnoreCase(true);
     
-    me.setPaths2Include("glob:**/brs/**");
+    // me.setPaths2Include("glob:**/FileUtils/**");  // This won't match the FileUtils directory
+    me.setPaths2Include("glob:**/FileUtils**");   // This is if you want to match the FileUtils dir
     me.runIt();
     System.out.println("Number of directories: " + me.getFiles().size());
   
@@ -31,14 +33,20 @@ class GetFileAttributesForDirectoryTest {
     for (Path aPath : theDirectories) {
       System.out.println("Processing directory: " + aPath.toString());
       
+      // Get the files (limited to java, properties and .gitignore) for this directory
+      //   and add them to the list of allFiles
       GetFileAttributesForDirectory getFileAttributesForDirectory = new GetFileAttributesForDirectory(aPath);
-      List<FileAttributes> tempList = getFileAttributesForDirectory.getFiles();
+      getFileAttributesForDirectory.setPaths2Include("glob:**.{java,properties,gitignore}");
+      
+      getFileAttributesForDirectory.setDebugFlag(false);
+      List<FileAttributes> tempList = getFileAttributesForDirectory.getFilesAttributes();
       allFiles.addAll(tempList);      
     }
     
-    System.out.println("Number of files: " + allFiles.size());
-    
-    
+    System.out.println("Number of files: " + allFiles.size());   
+    for (FileAttributes fileAttributes: allFiles) {
+      System.out.println("fileAttributes: " + fileAttributes.toString());
+    }
   }
 
 }

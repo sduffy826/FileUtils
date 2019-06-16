@@ -1,62 +1,31 @@
 package com.corti.files;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileStore;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
-import java.nio.file.attribute.AclFileAttributeView;
-import java.nio.file.attribute.BasicFileAttributeView;
-import java.nio.file.attribute.DosFileAttributeView;
 import java.nio.file.attribute.FileAttributeView;
-import java.nio.file.attribute.UserDefinedFileAttributeView;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.logging.Logger;
-
-import com.corti.javalogger.LoggerUtils;
-import com.corti.jsonutils.JsonUtils;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-
 import java.nio.file.attribute.PosixFileAttributeView;
-import java.nio.file.attribute.FileOwnerAttributeView;
 
-public class GetFileAttributesForDirectory {
-  private static final int num2Process = -1;  // -1 to do all records
-  private static final boolean DEBUGIT = false;
-  
-  private List<Path> fileList;
+public class GetFileAttributesForDirectory extends GetFileOrDirectoriesCommon {
   private List<FileAttributes> fileAttributeList;
   private Path startingPath; 
   
-  // Default constructor
+  // Default constructor is private, must instantiate with a starting path
   private GetFileAttributesForDirectory() { }
   
   public GetFileAttributesForDirectory(Path startingPath) {
+    super();
     this.startingPath = startingPath;    
   }
   
   // Main processing
-  public List<FileAttributes> getFiles() throws Exception {          
-    fileList          = new ArrayList<Path>(500);            // List of files
+  public List<FileAttributes> getFilesAttributes() throws Exception {          
     fileAttributeList = new ArrayList<FileAttributes>(500);  // List of file attribute objects
-    
-    FileSystem fileSystem = FileSystems.getDefault();
     
     // Define base path and set 'startingAbsolutePath'; that's important... for lookup purposes
     //   to compare to other machines we only want to search from the path we start with
@@ -66,7 +35,6 @@ public class GetFileAttributesForDirectory {
     //   then method above would return TestIO/src/test.java
     //--------------------------------------------------------------------------------------------
     String startingAbsolutePath = startingPath.toAbsolutePath().toString();
-     
     addPathsFromPath(startingPath, fileList);
     
     // If it has more data than we want to process then trim list to size we want
@@ -86,7 +54,7 @@ public class GetFileAttributesForDirectory {
         }
         fileAttributes.setStartingBasePath(startingAbsolutePath);
         fileAttributeList.add(fileAttributes);
-        if (DEBUGIT) System.out.println("fileAttributes: " + fileAttributes.toString());
+        if (debugIt) System.out.println("fileAttributes: " + fileAttributes.toString());
       } catch (Exception e) {
         System.out.println("Exception raised with " + thePath.toString());
         e.printStackTrace();
@@ -97,10 +65,56 @@ public class GetFileAttributesForDirectory {
       
   // Get all the files for the path passed in, we don't recurse down
   private void addPathsFromPath(Path _dirPath, List<Path> pathList) {
+    List<Path> skipList = new ArrayList<Path>(500);
+    Path path2Compare;
+    List<PathMatcher> pathMatchers2Check;
+    int isGood;
     try (DirectoryStream<Path> stream = Files.newDirectoryStream(_dirPath)) {
       for (Path entry : stream) {
         if (Files.isDirectory(entry) == false) {
-          pathList.add(entry);
+          path2Compare = entry.toAbsolutePath();
+          if (pathMatcherIgnoreCase) 
+            path2Compare = Paths.get(entry.toAbsolutePath().toString().toLowerCase());
+
+          if (debugIt) System.out.println("In addPathsFromPath() file: " + entry.toString());
+                 
+          // Check both path matchers
+          int loopCnt = 0;
+          isGood = -2; // Flag, if weWant file by default
+          while (loopCnt < 2) {
+            loopCnt++;
+            if (loopCnt == 1)
+              pathMatchers2Check = getPaths2Include();
+            else
+              pathMatchers2Check = getPaths2Exclude();
+
+            if (pathMatchers2Check.size() > 0) {
+              isGood = -1;
+              for (PathMatcher pathMatcher : pathMatchers2Check) {
+                if (pathMatcher.matches(entry)) {
+                  if (loopCnt == 1) { // match an include it's good
+                    isGood = 1;
+                    break;
+                  } else { // It matches an exclude, it's bad
+                    isGood = 0;
+                    break;
+                  }
+                }
+              }
+              // If checking includes and didn't match any then we can exit
+              if (loopCnt == 1 && isGood != 1) {
+                isGood = 0;  
+                loopCnt = 3; 
+              } 
+            } // end of if check that patchMatchers2Check.size() > 0
+          } // end of while loop
+                        
+          if (isGood == 0) {  // Don't want it, if in debug mode write it to skippy :)
+            skipList.add(entry);
+          }
+          else { // Matched or no pathMatchers defined or didn't match an exclude
+            pathList.add(entry);
+          }
         }                
       }
     } catch (IOException e) {      

@@ -35,8 +35,8 @@ class GetDirectoriesFromPathTest {
     for (Path aPath : rtnList) {
       System.out.println("In testGet10Directories: " + aPath.toString());
     }
-    System.out.println("testGet10Directories(), number of directories: " + me.getNumberOfEntries());
-    assertEquals(10,me.getNumberOfEntries(),"Pulled 10 directories only");
+    System.out.println("testGet10Directories(), number of directories: " + me.getFiles().size());
+    assertEquals(10,me.getFiles().size(),"Pulled 10 directories only");
   }
 
   

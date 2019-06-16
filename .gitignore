@@ -1,4 +1,8 @@
 /*.0
+*.$$$
+*.txt
+*_Original.java
+*.ser
 /target
 /.classpath
 /.settings

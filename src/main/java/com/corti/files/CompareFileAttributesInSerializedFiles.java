@@ -19,41 +19,32 @@ import java.util.logging.Logger;
 
 import com.corti.javalogger.LoggerUtils;
 
-public class CompareFileAttributesSerializationFiles {
-  private static final boolean DEBUGIT = true;
-  
+public class CompareFileAttributesInSerializedFiles {
+ 
   private Logger logger;
   private Instant startInstant;
-  private List<FileAttributes> fileAttributeList;
+  private Path firstPath, secondPath; 
   
   // Default constructor
-  CompareFileAttributesSerializationFiles() { }
+  private CompareFileAttributesInSerializedFiles() { }
   
-  // Mainline
-  public static void main(String[] args) throws Exception {
-    CompareFileAttributesSerializationFiles me = new CompareFileAttributesSerializationFiles();
-    me.runIt(args);
+  // 
+  public CompareFileAttributesInSerializedFiles(Path _firstPath, Path _secondPath) {
+    this.firstPath  = _firstPath;
+    this.secondPath = _secondPath;
   }
   
-  public void runIt(String[] args) throws Exception {      
+  public void performCompare() throws Exception {      
     logger       = (new LoggerUtils()).getLogger("TestDosAttributes", "TestDosAttributesLogger");
     startInstant = null;
-
-    if (args.length < 2) {
-      System.out.println("Need to pass in two serialization files");
-      System.exit(99);
-    }
-    
-    Path firstPath = Paths.get(args[0]);
-    Path secondPath = Paths.get(args[1]);
 
     logger.info("Starting deserialization");    
     getElapsedTimeInMilliseconds(true);
     
     List<FileAttributes> firstFileAttributesList =
-      (ArrayList<FileAttributes>) deserializeFileAttributesList(firstPath);
+      (ArrayList<FileAttributes>) SerializeOrDeserializeFileAttributes.deserializeFileAttributesList(firstPath);
     List<FileAttributes> secondFileAttributesList =
-      (ArrayList<FileAttributes>) deserializeFileAttributesList(secondPath);
+      (ArrayList<FileAttributes>) SerializeOrDeserializeFileAttributes.deserializeFileAttributesList(secondPath);
 
     // Define lists for results
     List<Integer> inFirstNotSecond = new ArrayList<Integer>(2000);
@@ -88,28 +79,7 @@ public class CompareFileAttributesSerializationFiles {
     }
     System.out.println("Done");
     
-  }
-    
-  
-  // Write out the missing records to the filename passed in
-  private void dumpMissing(String fileNameToOutput, List<Integer> missingRecords, List<FileAttributes> fattr) 
-    throws Exception {
-    Path path = Paths.get(fileNameToOutput);  
-    if (Files.exists(path) == true) {
-      System.out.println("File exists");
-      throw(new IOException("file exists: " + fileNameToOutput));
-    }
-    System.out.println("Writing missing files to: " + fileNameToOutput);
-    try (BufferedWriter writer = Files.newBufferedWriter(path)) {
-      for (Integer thePos : missingRecords) {
-        writer.write(fattr.get(thePos.intValue()).absolutePath
-                     + "," + fattr.get(thePos.intValue()).getFileExtension());
-        writer.newLine();
-      }
-    } catch (IOException e) {
-      e.printStackTrace();
-    }    
-  }
+  }    
   
   // Compare the arrays, basically call helpers to setup map and do the compare
   public void compArrays(List<FileAttributes> beforeList, List<FileAttributes> afterList,
@@ -127,15 +97,6 @@ public class CompareFileAttributesSerializationFiles {
     compareList(afterList, fileNameAndPathMapBefore, beforeList,
         inAfterNotBefore, null, false);
   }
-   
-  // Helper method to set the map to have fileNameAndPath as key and index position of the record in the
-  //   fileAttributesList
-  private void setMapArray(List<FileAttributes> fileAttributesList, Map<String, Integer> fileNameAndPathMap) {    
-    for (int i = 0; i < fileAttributesList.size(); i++) {
-      String key2Search = fileAttributesList.get(i).getPathFromBaseAsUnix();
-      fileNameAndPathMap.put(key2Search, Integer.valueOf(i));
-    }    
-  }
     
   // Compare lists, the arguments are:
   //   sourceList ------------ The source FileAttributes list
@@ -145,11 +106,11 @@ public class CompareFileAttributesSerializationFiles {
   //   listOfChangedRecords -- This list has the sourceIndex and targetIndex of records that differ
   //   compareForChanges ----- Boolean to see if we should look for changes 
   private void compareList(List<FileAttributes> sourceList, 
-      Map<String,Integer> targetMap, List<FileAttributes> targetList,
-      List<Integer> listOfRecordsNotFound, 
-      List<PairOfInts> listOfRecordsChanged, 
-      boolean compareForChanges) {
-    
+                           Map<String,Integer> targetMap, 
+                           List<FileAttributes> targetList,
+                           List<Integer> listOfRecordsNotFound, 
+                           List<PairOfInts> listOfRecordsChanged, 
+                           boolean compareForChanges) {    
     Integer thePos = null;
     for (int i = 0; i < sourceList.size(); i++) {
       String key2Search = sourceList.get(i).getPathFromBaseAsUnix();
@@ -168,7 +129,28 @@ public class CompareFileAttributesSerializationFiles {
       }
     }       
   }
- 
+
+  // Write out the missing records to the filename passed in
+  private void dumpMissing(String fileNameToOutput, 
+                           List<Integer> missingRecords, 
+                           List<FileAttributes> fattr) throws Exception {
+    Path path = Paths.get(fileNameToOutput);  
+    if (Files.exists(path) == true) {
+      System.out.println("File exists");
+      throw(new IOException("file exists: " + fileNameToOutput));
+    }
+    System.out.println("Writing missing files to: " + fileNameToOutput);
+    try (BufferedWriter writer = Files.newBufferedWriter(path)) {
+      for (Integer thePos : missingRecords) {
+        writer.write(fattr.get(thePos.intValue()).absolutePath
+                     + "," + fattr.get(thePos.intValue()).getFileExtension());
+        writer.newLine();
+      }
+    } catch (IOException e) {
+      e.printStackTrace();
+    }    
+  }
+  
   private boolean fileAttributesDiffer(FileAttributes fa1, FileAttributes fa2) {  
     // Treat nulls like empty string
     String checkSum1 = fa1.getCheckSumValue();
@@ -180,22 +162,7 @@ public class CompareFileAttributesSerializationFiles {
     if (fa1.getLastModifiedTime().toMillis() != fa2.getLastModifiedTime().toMillis()) return true;
     return false;
   }
-  
-  public List<FileAttributes> deserializeFileAttributesList(Path inputPath) {
-    ArrayList<FileAttributes> fileAttributesList = new ArrayList<FileAttributes>(2000);
-    try (FileInputStream fis   = new FileInputStream(inputPath.toFile());
-         ObjectInputStream ois = new ObjectInputStream(fis)) {
-
-      fileAttributeList = (ArrayList) ois.readObject();
-    } catch (IOException e) {
-      e.printStackTrace();
-    } catch (ClassNotFoundException c) {
-      System.out.println("Class not found");
-      c.printStackTrace();
-    }
-    return fileAttributeList;
-  }
-    
+      
   private long getElapsedTimeInMilliseconds(boolean startIt) {
     if (startIt || startInstant == null) {
       startInstant = Instant.now(); 
@@ -206,4 +173,14 @@ public class CompareFileAttributesSerializationFiles {
       return Duration.between(startInstant,  ending).toMillis();
     }
   } 
+  
+
+  // Helper method to set the map to have fileNameAndPath as key and index position of the record in the
+  //   fileAttributesList
+  private void setMapArray(List<FileAttributes> fileAttributesList, Map<String, Integer> fileNameAndPathMap) {    
+    for (int i = 0; i < fileAttributesList.size(); i++) {
+      String key2Search = fileAttributesList.get(i).getPathFromBaseAsUnix();
+      fileNameAndPathMap.put(key2Search, Integer.valueOf(i));
+    }    
+  }
 }
