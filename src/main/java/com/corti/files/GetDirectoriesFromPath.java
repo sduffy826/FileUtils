@@ -100,7 +100,7 @@ public class GetDirectoriesFromPath extends GetFileOrDirectoriesCommon {
         for (Path entry : stream) {
           if (Files.isDirectory(entry)) {
             pathNameCount = entry.getNameCount();  // Get number of levels in this path
-            if (maxDepth >= (pathNameCount - startingNameCount)) { 
+            if (maxDepth == -1 || maxDepth >= (pathNameCount - startingNameCount)) { 
               if (debugIt)
                 System.out.println("addPathsFromPath: " + entry.toString() +
                                    " level: " + (pathNameCount - startingNameCount));
