@@ -6,12 +6,14 @@ import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
 import java.util.List;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import com.corti.files.GetDirectoriesFromPath;
 
 class GetDirectoriesFromPathTest {
 
+  @Disabled
   @Test
   void test() {
     GetDirectoriesFromPath me = new GetDirectoriesFromPath("/seanduff");
@@ -24,6 +26,7 @@ class GetDirectoriesFromPathTest {
     assertTrue(me.getPaths2Exclude().size() > 0);
   }
 
+  @Disabled
   @Test
   public void testGet10Directories() throws Exception {
     GetDirectoriesFromPath me = new GetDirectoriesFromPath("/seanduff/workspace/JavaUtilities");
@@ -39,7 +42,7 @@ class GetDirectoriesFromPathTest {
     assertEquals(10,me.getFiles().size(),"Pulled 10 directories only");
   }
 
-  
+  @Disabled
   @Test
   void testClearPath() {
     GetDirectoriesFromPath me = new GetDirectoriesFromPath("/seanduff");
@@ -52,6 +55,7 @@ class GetDirectoriesFromPathTest {
     assertTrue(me.getPaths2Exclude().size() == 0);    
   }
   
+  @Disabled
   @Test
   void testLoadPropertyExclude() {
     GetDirectoriesFromPath me = new GetDirectoriesFromPath("/seanduff");
@@ -70,15 +74,32 @@ class GetDirectoriesFromPathTest {
   }
   
   @Test
-  void testLoadPath2Exclude() {
+  void testLoadPath2Exclude() throws Exception {
     GetDirectoriesFromPath me = new GetDirectoriesFromPath("/seanduff");
     me.setDebugFlag(false);
     
     // Add one item and verify that's all that's there
     me.clearPaths2Exclude();
-    me.setPaths2Exclude("glob:**/deleteMe/**");
+    me.setPaths2Exclude("glob:**/workspace**");
+    // me.setPaths2Exclude("glob:**/SameTimeChats**");
     System.out.println("Size of pathExclusingList: " + me.getPaths2Exclude().size());
     assertTrue(me.getPaths2Exclude().size() == 1);
+    me.setMaxDepth(3);
+    me.runIt();
+    System.out.println("Number of directories: " + me.getFiles().size());
+    System.out.println("Path matcher ignores case: " + me.getPathMatcherIgnoreCase());
+    List<Path> theDirectories = me.getFiles();
+    for (Path aPath : theDirectories) {
+      System.out.println("Directory: " + aPath.toString());
+    }
+  }
+  
+  @Disabled
+  @Test
+  void testPathMatcher() {
+    GetDirectoriesFromPath me = new GetDirectoriesFromPath("/seanduff");
+    me.clearPaths2Exclude();
+    me.setPaths2Exclude("glob:**/deleteMe/**");
     
     // deleteMe_pathMatcher, it's where 'deleteMe' is anywhere in path
     PathMatcher deleteMe_PathMatcher = me.getPaths2Exclude().get(0);
@@ -96,9 +117,10 @@ class GetDirectoriesFromPathTest {
     assertFalse(deleteMe_PathMatcher.matches(testPath));
     
     testPath = Paths.get("/deleteMe/.");
-    assertTrue(deleteMe_PathMatcher.matches(testPath));    
+    assertTrue(deleteMe_PathMatcher.matches(testPath));
   }
   
+  @Disabled
   @Test
   void testPath2Include() throws Exception {
     // This tests paths to be included in the search, for this one we show how you

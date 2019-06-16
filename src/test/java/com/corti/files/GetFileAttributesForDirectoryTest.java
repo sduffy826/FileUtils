@@ -9,7 +9,7 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
-import com.corti.files.GetDirectoriesFromPath_Original;
+import com.corti.files.GetDirectoriesFromPath;
 
 class GetFileAttributesForDirectoryTest {
  

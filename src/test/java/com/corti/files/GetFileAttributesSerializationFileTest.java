@@ -13,12 +13,13 @@ class GetFileAttributesSerializationFileTest {
   
   @Test
   void test() throws Exception {
-    Path outputSerializedFile = Paths.get("appleWorkspace.ser");
+    Path outputSerializedFile = Paths.get("appleSeanduff.ser");
     
     
     // This tests paths to be included in the search, for this one we show how you
     //   can include paths and ignore the 'case' of the directory name
-    GetDirectoriesFromPath me = new GetDirectoriesFromPath("/seanduff/workspace");
+    GetDirectoriesFromPath me = new GetDirectoriesFromPath("/seanduff");
+    me.setPaths2Exclude("glob:**/workspace**");
     //me.setDebugFlag(true);
     //me.setMaxDepth(3);
     //me.setPathMatcherIgnoreCase(true);
