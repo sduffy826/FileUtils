@@ -13,29 +13,32 @@ import java.nio.file.attribute.PosixFileAttributeView;
 
 public class GetFileAttributesForDirectory extends GetFileOrDirectoriesCommon {
   private List<FileAttributes> fileAttributeList;
-  private Path startingPath; 
+  private Path directoryPath2Pull;  // The directory path we're getting files from
+  private Path baseDirectoryPath;   // The base directory, we use this for stripping of the
+                                    //   starting path when calling FileAttributes.getPathFromBaseAsUnix
   
   // Default constructor is private, must instantiate with a starting path
   private GetFileAttributesForDirectory() { }
   
-  public GetFileAttributesForDirectory(Path startingPath) {
+  public GetFileAttributesForDirectory(Path directoryPath2Pull, Path baseDirectoryPath) {
     super();
-    this.startingPath = startingPath;    
+    this.directoryPath2Pull = directoryPath2Pull;    
+    this.baseDirectoryPath  = baseDirectoryPath;
   }
   
   // Main processing
   public List<FileAttributes> getFilesAttributes() throws Exception {          
     fileAttributeList = new ArrayList<FileAttributes>(500);  // List of file attribute objects
     
-    // Define base path and set 'startingAbsolutePath'; that's important... for lookup purposes
+    // Use baseDirectoryPath and set 'startingAbsolutePath'; that's important... for lookup purposes
     //   to compare to other machines we only want to search from the path we start with
     //   going down.  The method FileAttributes.getPathFromBaseAsUnix returns the absolute
     //   path of a file with the 'startingAbsolutePath' removed, i.e. if startingAbsolutePath
     //   was c:\\seanduff\\workspace and we have file c:\\seanduffy\workspace\TestIO\src\test.java
     //   then method above would return TestIO/src/test.java
     //--------------------------------------------------------------------------------------------
-    String startingAbsolutePath = startingPath.toAbsolutePath().toString();
-    addPathsFromPath(startingPath, fileList);
+    String startingAbsolutePath = baseDirectoryPath.toAbsolutePath().toString();
+    addPathsFromPath(directoryPath2Pull, fileList);
     
     // If it has more data than we want to process then trim list to size we want
     if (num2Process > 0 && fileList.size() > num2Process)  

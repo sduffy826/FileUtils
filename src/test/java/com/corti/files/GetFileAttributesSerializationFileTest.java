@@ -15,10 +15,11 @@ class GetFileAttributesSerializationFileTest {
   void test() throws Exception {
     Path outputSerializedFile = Paths.get("appleSeanduff.ser");
     
+    Path startingPath = Paths.get("/seanduff");
     
     // This tests paths to be included in the search, for this one we show how you
     //   can include paths and ignore the 'case' of the directory name
-    GetDirectoriesFromPath me = new GetDirectoriesFromPath("/seanduff");
+    GetDirectoriesFromPath me = new GetDirectoriesFromPath(startingPath);
     me.setPaths2Exclude("glob:**/workspace**");
     //me.setDebugFlag(true);
     //me.setMaxDepth(3);
@@ -35,7 +36,8 @@ class GetFileAttributesSerializationFileTest {
       
       // Get the files (limited to java, properties and .gitignore) for this directory
       //   and add them to the list of allFiles
-      GetFileAttributesForDirectory getFileAttributesForDirectory = new GetFileAttributesForDirectory(aPath);
+      GetFileAttributesForDirectory getFileAttributesForDirectory = 
+          new GetFileAttributesForDirectory(aPath, startingPath);
       //getFileAttributesForDirectory.setPaths2Include("glob:**.{java,properties,gitignore}");
       
       //getFileAttributesForDirectory.setDebugFlag(false);

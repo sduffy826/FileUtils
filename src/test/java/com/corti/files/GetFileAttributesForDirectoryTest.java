@@ -15,9 +15,12 @@ class GetFileAttributesForDirectoryTest {
  
   @Test
   void testPath2IncludeAndFiles() throws Exception {
+    
+    Path startingPath = Paths.get("/seanduff/workspace");
+    
     // This tests paths to be included in the search, for this one we show how you
     //   can include paths and ignore the 'case' of the directory name
-    GetDirectoriesFromPath me = new GetDirectoriesFromPath("/seanduff/workspace");
+    GetDirectoriesFromPath me = new GetDirectoriesFromPath(startingPath);
     me.setDebugFlag(true);
     me.setMaxDepth(3);
     me.setPathMatcherIgnoreCase(true);
@@ -35,7 +38,8 @@ class GetFileAttributesForDirectoryTest {
       
       // Get the files (limited to java, properties and .gitignore) for this directory
       //   and add them to the list of allFiles
-      GetFileAttributesForDirectory getFileAttributesForDirectory = new GetFileAttributesForDirectory(aPath);
+      GetFileAttributesForDirectory getFileAttributesForDirectory = 
+          new GetFileAttributesForDirectory(aPath, startingPath);
       getFileAttributesForDirectory.setPaths2Include("glob:**.{java,properties,gitignore}");
       
       getFileAttributesForDirectory.setDebugFlag(false);

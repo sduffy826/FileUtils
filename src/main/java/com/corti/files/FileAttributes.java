@@ -31,7 +31,8 @@ public abstract class FileAttributes implements Serializable {
   
   protected String className;
   protected Path path;
-  protected String startingBasePath;  // The starting base path that objects created from
+  protected String startingBasePath;  // The starting base path, this is stripped off in the
+                                      // call to getPathFromBaseAsUnix()
   
   protected String absolutePath;  // Needed when instantiated from json object
   protected String fileExtension; // Wanted to ignore certain types
@@ -211,7 +212,7 @@ public abstract class FileAttributes implements Serializable {
       }
     }
     return rtnString;
-  }
+  }  
   
   // -----------------------------------------------------------------------------
   // Setters; these are called when object is deserialized (i.e. from json object)  
