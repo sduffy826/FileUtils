@@ -135,10 +135,14 @@ public class GetDirectoriesFromPath extends GetFileOrDirectoriesCommon {
       }
     }
       
+    
+    // tempList has the directories from the original list, and their children, clear out
+    // pathList, we'll rebuild it here
+    pathList.clear();
+    
     // We have all the directories... we couldn't filter out the include list above cause 
     //   the path could be one that's nested several layers deep, so we'll filter them out here
     if (pathMatchers2Include.size() > 0) {
-      pathList.clear();
       for (Path aPath : tempList) {
         skipIt = true;
         

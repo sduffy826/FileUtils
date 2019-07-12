@@ -15,12 +15,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 import com.corti.javalogger.LoggerUtils;
 
 public class CompareFileAttributesInSerializedFiles {
- 
+  private final int allowableDiffInSeconds = 2;
   private Logger logger;
   private Instant startInstant;
   private Path firstPath, secondPath; 
@@ -49,7 +50,7 @@ public class CompareFileAttributesInSerializedFiles {
     // Define lists for results
     List<Integer> inFirstNotSecond = new ArrayList<Integer>(2000);
     List<Integer> inSecondNotFirst = new ArrayList<Integer>(2000);
-    List<PairOfInts> inBothButDiff = new ArrayList<PairOfInts>(2000);
+    List<CompareAttributes> inBothButDiff = new ArrayList<CompareAttributes>(2000);
         
     Double elapsedMillis = new Long(getElapsedTimeInMilliseconds(false)).doubleValue();
     logger.info("Deserialization done, elapsed time: " + Double.toString(elapsedMillis/1000.0));
@@ -61,19 +62,24 @@ public class CompareFileAttributesInSerializedFiles {
     logger.info("Done comparing, elapsed time: " + Double.toString(elapsedMillis/1000.0));
     
     // Now for the results
-    dumpMissing("In_"+firstPath.getFileName()+"_not"+secondPath.getFileName(),
+    dumpMissing("In_"+firstPath.getFileName()+"_not"+secondPath.getFileName()+".csv",
                 inFirstNotSecond, firstFileAttributesList);
-    dumpMissing("In_"+secondPath.getFileName()+"_not_"+firstPath.getFileName(),
+    dumpMissing("In_"+secondPath.getFileName()+"_not_"+firstPath.getFileName()+".csv",
                  inSecondNotFirst, secondFileAttributesList);
     
-    Path diffPath = Paths.get("differencesFromFileOfSerializedFileAttributes.txt");
+    Path diffPath = Paths.get("differencesFromFileOfSerializedFileAttributes.csv");
     System.out.println("Writing differences to: " + diffPath.getFileName());
     try(BufferedWriter writer = Files.newBufferedWriter(diffPath))  {
-      for (PairOfInts pairOfInts : inBothButDiff) {
-        writer.write(firstFileAttributesList.get(pairOfInts.a).getPathFromBaseAsUnix()
-                     + "," + firstFileAttributesList.get(pairOfInts.a).getFileExtension()
-                     + "," + firstFileAttributesList.get(pairOfInts.a).getLastModifiedTime().toString()
-                     + "," + secondFileAttributesList.get(pairOfInts.b).getLastModifiedTime().toString());
+      writer.write(firstPath.getFileName() + "," + secondPath.getFileName());
+      writer.newLine();
+      for (CompareAttributes compareAttributes : inBothButDiff) {
+        writer.write(firstFileAttributesList.get(compareAttributes.a).getPathFromBaseAsUnix()
+                     + "," + firstFileAttributesList.get(compareAttributes.a).getFileExtension()
+                     + "," + compareAttributes.deltaType.getDesc()
+                     + "," + firstFileAttributesList.get(compareAttributes.a).getSizeInBytes()
+                     + "," + firstFileAttributesList.get(compareAttributes.a).getLastModifiedTime().toString()
+                     + "," + secondFileAttributesList.get(compareAttributes.b).getSizeInBytes()
+                     + "," + secondFileAttributesList.get(compareAttributes.b).getLastModifiedTime().toString());
         writer.newLine();
       }
     }
@@ -85,7 +91,7 @@ public class CompareFileAttributesInSerializedFiles {
   public void compArrays(List<FileAttributes> beforeList, List<FileAttributes> afterList,
                          List<Integer> inBeforeNotAfter,
                          List<Integer> inAfterNotBefore,
-                         List<PairOfInts> inBothButDiff) {
+                         List<CompareAttributes> inBothButDiff) {
     Map<String, Integer> fileNameAndPathMapBefore = new HashMap<String, Integer>();
     Map<String, Integer> fileNameAndPathMapAfter  = new HashMap<String, Integer>();
     
@@ -109,7 +115,7 @@ public class CompareFileAttributesInSerializedFiles {
                            Map<String,Integer> targetMap, 
                            List<FileAttributes> targetList,
                            List<Integer> listOfRecordsNotFound, 
-                           List<PairOfInts> listOfRecordsChanged, 
+                           List<CompareAttributes> listOfRecordsChanged, 
                            boolean compareForChanges) {    
     Integer thePos = null;
     for (int i = 0; i < sourceList.size(); i++) {
@@ -117,9 +123,10 @@ public class CompareFileAttributesInSerializedFiles {
       thePos = targetMap.get(key2Search);
       if (thePos != null) {
         if (compareForChanges) {
-          if (fileAttributesDiffer(sourceList.get(i), targetList.get(thePos.intValue())) == true) {
+          ComparisonType compType = fileAttributesDiffer(sourceList.get(i), targetList.get(thePos.intValue()));
+          if (compType != ComparisonType.MATCH) {
             // Add record to array, we put index positions from source and target FileAttribute arrays
-            listOfRecordsChanged.add(new PairOfInts(i, thePos.intValue()));
+            listOfRecordsChanged.add(new CompareAttributes(i, thePos.intValue(), compType));
           }          
         }
       }
@@ -151,16 +158,25 @@ public class CompareFileAttributesInSerializedFiles {
     }    
   }
   
-  private boolean fileAttributesDiffer(FileAttributes fa1, FileAttributes fa2) {  
+  // Compare two file attributes, return a ComparisonType enum with the result
+  private ComparisonType fileAttributesDiffer(FileAttributes fa1, FileAttributes fa2) {  
     // Treat nulls like empty string
     String checkSum1 = fa1.getCheckSumValue();
     String checkSum2 = fa2.getCheckSumValue();
     if (checkSum1 == null) checkSum1 = "";
     if (checkSum2 == null) checkSum2 = "";
     
-    if (checkSum1.compareTo(checkSum2) != 0) return true;
-    if (fa1.getLastModifiedTime().toMillis() != fa2.getLastModifiedTime().toMillis()) return true;
-    return false;
+    if (checkSum1.compareTo(checkSum2) != 0) return ComparisonType.CHECKSUM;
+    
+    // Only compare to seconds (some os's have filetime down to milliseconds and some don't,
+    //   need least common denominator).
+    long diffInSeconds = Math.abs(fa1.getLastModifiedTime().to(TimeUnit.SECONDS) -
+                                  fa1.getLastModifiedTime().to(TimeUnit.SECONDS));
+    
+    if (diffInSeconds > allowableDiffInSeconds) return ComparisonType.FILETIME;
+    
+    // if (fa1.getLastModifiedTime().toMillis() != fa2.getLastModifiedTime().toMillis()) return true;
+    return ComparisonType.MATCH;
   }
       
   private long getElapsedTimeInMilliseconds(boolean startIt) {

@@ -13,14 +13,21 @@ import com.corti.files.GetDirectoriesFromPath;
 
 class GetDirectoriesFromPathTest {
 
-  @Disabled
+  // @Disabled
   @Test
   void test() {
-    GetDirectoriesFromPath me = new GetDirectoriesFromPath("/seanduff");
+    GetDirectoriesFromPath me = new GetDirectoriesFromPath("/seanduff/spreadsheets");
     me.setDebugFlag(false);
+    try {
+      me.runIt();
+    } catch (Exception e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
     // Showing it doesn't get directories yet, u need to do me.runIt()
     System.out.println("Number of directories: " + me.getFiles().size());
     System.out.println("Size of pathExclusingList: " + me.getPaths2Exclude().size());
+    System.out.println(me.getFiles());
     
     // Should be default in directory
     assertTrue(me.getPaths2Exclude().size() > 0);
@@ -73,6 +80,7 @@ class GetDirectoriesFromPathTest {
     assertTrue(me.getPaths2Exclude().size() > 0);
   }
   
+  @Disabled
   @Test
   void testLoadPath2Exclude() throws Exception {
     GetDirectoriesFromPath me = new GetDirectoriesFromPath("/seanduff");
