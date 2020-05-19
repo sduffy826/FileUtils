@@ -11,4 +11,6 @@
 eraseIt
 getFile
 *.csv0
+doc/*
+.DS_Store
 *.tgz

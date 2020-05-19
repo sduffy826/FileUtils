@@ -16,13 +16,13 @@ class GetFileAttributesForDirectoryTest {
   @Test
   void testPath2IncludeAndFiles() throws Exception {
     
-    Path startingPath = Paths.get("/seanduff/workspace");
+    Path startingPath = Paths.get("/seanduff/eclipseWorkspaces/workMachMain/");
     
     // This tests paths to be included in the search, for this one we show how you
     //   can include paths and ignore the 'case' of the directory name
     GetDirectoriesFromPath me = new GetDirectoriesFromPath(startingPath);
     me.setDebugFlag(true);
-    me.setMaxDepth(3);
+    me.setMaxDepth(10);
     me.setPathMatcherIgnoreCase(true);
     
     // me.setPaths2Include("glob:**/FileUtils/**");  // This won't match the FileUtils directory

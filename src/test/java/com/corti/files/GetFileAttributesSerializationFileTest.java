@@ -15,7 +15,7 @@ class GetFileAttributesSerializationFileTest {
   void test() throws Exception {
     Path outputSerializedFile = Paths.get("appleSerializedFile.ser");
     
-    Path startingPath = Paths.get("/seanduff/spreadsheets");
+    Path startingPath = Paths.get("/seanduff/SameTimeChats");
     
     // This tests paths to be included in the search, for this one we show how you
     //   can include paths and ignore the 'case' of the directory name

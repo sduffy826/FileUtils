@@ -15,8 +15,19 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import com.corti.files.checksum.CheckSum;
 
-// We don't want instantiationMethod to be deserialized, but it can be serialized, you
-//  can add other attributes to array if needed
+/**
+ * This is an abstract class with common 'file attributes', it is subclassed
+ * (at the time of writing (atow)) by DosFileAttributes and UnixFileAttributes.
+ * It supports serialization/deserialization; the attribute 'instantiationMethod'
+ * is used to identify how the object was created; this is needed because the
+ * certain attributes may not apply for deserialized objects (i.e. file path).
+ * We won't deserialize the 'instantiationMethod' but it is serialized.
+ * Note: This is using routines in my JsonUtils project to help with 
+ * serialization; that project is using Jackson (atow).
+ *  
+ * @author sduffy 
+ * 
+ */
 @JsonIgnoreProperties(value={ "instantiationMethod" }, allowGetters=true)
 public abstract class FileAttributes implements Serializable {
   // These statics are used to represent how the object was instantiated; when instantiated
@@ -170,7 +181,7 @@ public abstract class FileAttributes implements Serializable {
     return sizeInBytes;
   }
   
-  // Lazy instantiaion of the checksum value
+  // Lazy instantiation of the checksum value
   public String getCheckSumValue() {
     if (checkSumValue == null && path != null && this.isRegularFile) { 
       try {

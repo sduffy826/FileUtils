@@ -11,7 +11,7 @@ class CompareFileAttributesInSerializedFilesTest {
 
   @Test
   void test() {
-    Path appleWorkspace = Paths.get("appleSerializedFile.ser");
+    Path appleWorkspace = Paths.get("linuxSerializedFile.ser");
     Path windowsWorkspace = Paths.get("windowsSerializedFile.ser");
     
     CompareFileAttributesInSerializedFiles me = 
