@@ -1,4 +1,5 @@
 package com.corti.files;
+import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -45,8 +46,9 @@ public abstract class FileAttributes implements Serializable {
   protected String startingBasePath;  // The starting base path, this is stripped off in the
                                       // call to getPathFromBaseAsUnix()
   
-  protected String absolutePath;  // Needed when instantiated from json object
-  protected String fileExtension; // Wanted to ignore certain types
+  protected String absolutePath;       // Needed when instantiated from json object
+  protected String absoluteParentPath; // Parent absolute path
+  protected String fileExtension;      // Wanted to ignore certain types
   
   @JsonSerialize(using = com.corti.jsonutils.FileTimeSerializer.class)
   @JsonDeserialize(using = com.corti.jsonutils.FileTimeDeSerializer.class)
@@ -108,11 +110,11 @@ public abstract class FileAttributes implements Serializable {
         // We will set checkSumValue in getter (lazy instantiation) done for performance
         //   since only need to set if we need it :)
         
-        this.absolutePath = "";
-        Path absolutePathObject = path.toAbsolutePath();
-        if (absolutePathObject != null ) {
-          this.absolutePath = absolutePathObject.toString();
-        }
+        this.absolutePath = path.toFile().getCanonicalPath();       // This is a 'clean' absolute path
+        this.absoluteParentPath = (new File(absolutePath)).getParent(); // Get 'files' parent and put on separator if needed
+        if (this.absoluteParentPath.charAt(this.absoluteParentPath.length() - 1) != File.separatorChar) {
+          this.absoluteParentPath += File.separator;
+        } 
         
         this.fileExtension = "";
         if (this.isDirectory == false) 
@@ -153,6 +155,9 @@ public abstract class FileAttributes implements Serializable {
   public String getAbsolutePath() {
     return absolutePath;
   }   
+  public String getAbsoluteParentPath() {
+    return absoluteParentPath;
+  }
   public String getFileExtension() {
     return fileExtension;
   }
@@ -260,6 +265,9 @@ public abstract class FileAttributes implements Serializable {
   public void setAbsolutePath(String absolutePath) {
     this.absolutePath = absolutePath;
   }
+  public void setAbsoluteParentPath(String absoluteParentPath) {
+    this.absoluteParentPath = absoluteParentPath;
+  }
   public void setFileExtension(String fileExtension) {
     this.fileExtension = fileExtension;
   }
@@ -275,6 +283,7 @@ public abstract class FileAttributes implements Serializable {
         + ", getPathRoot()=" + getPathRoot() 
         + ", getPathParent()=" + getPathParent() 
         + ", absolutePath=" + absolutePath
+        + ", absoluteParentPath=" + absoluteParentPath
         + ", startingBasePath=" + startingBasePath
         + ", getPathFromBaseAsUnix()=" + getPathFromBaseAsUnix()
         + ", fileExtension=" + fileExtension
@@ -297,6 +306,7 @@ public abstract class FileAttributes implements Serializable {
     path                = Paths.get(objectInputStream.readUTF());
     startingBasePath    = objectInputStream.readUTF();
     absolutePath        = objectInputStream.readUTF();
+    absoluteParentPath  = objectInputStream.readUTF();
     fileExtension       = objectInputStream.readUTF();
     creationTime        = FileTime.fromMillis(objectInputStream.readLong());
     lastAccessTime      = FileTime.fromMillis(objectInputStream.readLong());
@@ -318,6 +328,7 @@ public abstract class FileAttributes implements Serializable {
     objectOutputStream.writeUTF(path.toString());
     objectOutputStream.writeUTF(startingBasePath);
     objectOutputStream.writeUTF(absolutePath);
+    objectOutputStream.writeUTF(absoluteParentPath);
     objectOutputStream.writeUTF(fileExtension);
     objectOutputStream.writeLong(creationTime.toMillis());
     objectOutputStream.writeLong(lastAccessTime.toMillis());

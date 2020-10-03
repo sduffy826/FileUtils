@@ -16,7 +16,8 @@ class GetFileAttributesForDirectoryTest {
   @Test
   void testPath2IncludeAndFiles() throws Exception {
     
-    Path startingPath = Paths.get("/seanduff/eclipseWorkspaces/workMachMain/");
+    //Path startingPath = Paths.get("/home/dev/workspace/");
+    Path startingPath = Paths.get("./");
     
     // This tests paths to be included in the search, for this one we show how you
     //   can include paths and ignore the 'case' of the directory name
